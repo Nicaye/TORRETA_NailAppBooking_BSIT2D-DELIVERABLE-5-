@@ -1,4 +1,3 @@
-
 package com.nailbooking.ui;
 
 import com.nailbooking.dao.ActivityLogDao;
@@ -14,6 +13,7 @@ public class Authentication {
     private final Scanner input;
     private final ApplicationMenu applicationMenu;
     private final ActivityLogDao logDao;
+    private final AdminMenu adminMenu;
 
     public Authentication(
             UserDao userDao,
@@ -25,8 +25,10 @@ public class Authentication {
         this.input = input;
         this.applicationMenu = applicationMenu;
         this.logDao = logDao;
-    }
 
+        // Connect the new Admin Menu
+        this.adminMenu = new AdminMenu(userDao, input, applicationMenu);
+    }
     public void start() {
         while (true) {
             System.out.println("\n==================================");
@@ -42,7 +44,8 @@ public class Authentication {
                 case "1" -> register();
                 case "2" -> login();
                 case "3" -> {
-                    System.out.println("Thank you for using the system!");
+                    System.out.println(
+                            "Thank you for using the system!");
                     return;
                 }
                 default -> System.out.println("Invalid choice.");
@@ -75,14 +78,15 @@ public class Authentication {
             }
 
             if (username.isBlank() || password.isBlank()) {
-                System.out.println("Username and password are required.");
+                System.out.println(
+                        "Username and password are required.");
                 return;
             }
 
             if (userDao.registerUser(username, password, role)) {
                 System.out.println(
-                        "Account registered successfully. Status: PENDING"
-                );
+                        "Account registered successfully. Status: PENDING");
+
                 logDao.recordActivity(
                         username, "Registered account");
             }
@@ -113,7 +117,12 @@ public class Authentication {
 
             logDao.recordActivity(user.username(), "Logged in");
 
-            applicationMenu.openMenu(user);
+            // Route users to the menu for their role
+            if (user.roles().equalsIgnoreCase("ADMIN")) {
+                adminMenu.openMenu(user);
+            } else {
+                applicationMenu.openMenu(user);
+            }
 
             logDao.recordActivity(user.username(), "Logged out");
 
